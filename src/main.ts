@@ -24,9 +24,11 @@ async function onSubmission(submission: any) {
 
     let res: any = await ssb.compile();
 
+    let isCustomTest = (submission['is_custom_test'] != undefined)
+
     // when compile error
     if(res['code'] != 0) {
-        await uoj.iteract({
+        let submitData = {
             submit: true,
             id: submission['id'],
             result: {
@@ -37,21 +39,89 @@ async function onSubmission(submission: any) {
                 error: "Compile Error",
                 details: `<error>${fs.readFileSync(tmpDir('/work/compile.result')).toString()}</error>`
             }
-        })
+        }
+        if(isCustomTest) (submitData as any)['is_custom_test']  = true;
+        await uoj.iteract(submitData)
         judging = false;
         return;
     }
 
     uoj.updateStatus(submission['id'], 'Running')
 
+
+
+    let judgeResult;
+    if(isCustomTest) judgeResult = await customJudge(submission, problemConf)
+    else judgeResult = await normalJudge(submission, problemConf)
+
+    
+    let submitData = {
+        submit: true,
+        id: submission['id'],
+        result: {
+            score: judgeResult.score,
+            time: Math.floor(judgeResult.time / 1000000),
+            memory: Math.floor(judgeResult.memory/1024),
+            status: "Judged",
+            details: judgeResult.details
+        }
+    }
+
+    if(isCustomTest) (submitData as any)['is_custom_test']  = true;
+
+    console.log(judgeResult.details)
+
+    let data = await uoj.iteract(submitData)
+    console.log("submited!" + data)
+
+    judging = false;
+}
+
+
+async function customJudge(submission: any, problemConf: any) {
+    let cnt = 0;
+    let time = 0;
+    let memory = 0;
+
+    uoj.updateStatus(submission['id'], `Judging With Your Input`);
+
+    let res: any = await ssb.judge(`../work/input.txt`, problemConf.time_limit, problemConf.memory_limit);
+
+    time = res['time']
+    memory = Math.max(memory, res['memory'])
+
+    let status;
+
+    switch(res['status']) {
+        case 1: status = 'Success'; break;
+        case 2: status = 'Time Limit Exceeded'; break;
+        case 3: status = 'Memory Limit Exceeded'; break;
+        default: status = 'No Comment';
+    }
+    if(res['status'] == 1 && res['code'] != '0') status = 'Runtime Error';
+
+    let details = `<tests><custom-test info="${status}" time="${Math.floor(res['time']/1000000)}" memory="${res['memory']/1024}"><out>${fs.readFileSync(tmpDir('/work/answer.result')).toString().substr(0, 100)}</out></custom-test></tests>`
+    let score = Math.floor(cnt / problemConf.n_tests * 100)
+
+    return {
+        score: score,
+        time: time,
+        memory: memory,
+        details: details
+    }
+}
+async function normalJudge(submission: any, problemConf: any) {
     let cnt = 0;
     let time = 0;
     let memory = 0;
 
     let details = '<tests>'
 
-    for(let i=1; i<=problemConf.n_tests; i++) {
+    let n_tests = problemConf.n_tests;
+    for(let i=1; i<=n_tests; i++) {
+        //if(isCustomTest) uoj.updateStatus(submission['id'], `Judging With Your Input`);
         uoj.updateStatus(submission['id'], `Judging Test #${i}`);
+
         let res: any = await ssb.judge(`pre${i}.in`, problemConf.time_limit, problemConf.memory_limit);
         let right = false;
 
@@ -64,8 +134,6 @@ async function onSubmission(submission: any) {
         memory = Math.max(memory, res['memory'])
 
         let status;
-
-
         switch(res['status']) {
             case 1: status = 'Accepted'; break;
             case 2: status = 'Time Limit Exceeded'; break;
@@ -80,38 +148,22 @@ async function onSubmission(submission: any) {
         if(res['status'] == 1 && res['code'] != '0') status = 'Runtime Error';
 
         details += `<test num="${i}" score="${right?100:0}" info="${status}" time="${Math.floor(res['time']/1000000)}" memory="${res['memory']/1024}">
-        <in>${fs.readFileSync(tmpDir(`/data/input/${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 20)}</in>
-        <out>${fs.readFileSync(tmpDir('/work/answer.result')).toString().substr(0, 20)}</out>
+        <in>${fs.readFileSync(tmpDir(`/data/input/${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 100)}</in>
+        <out>${fs.readFileSync(tmpDir('/work/answer.result')).toString().substr(0, 100)}</out>
         <res>${right?'right!':fs.readFileSync(tmpDir(`/data/output/${problemConf.output_pre}${i}.${problemConf.output_suf}`)).toString().substr(0, 20)}</res>
         </test>`
     }
 
     details += '</tests>';
-
     let score = Math.floor(cnt / problemConf.n_tests * 100)
 
-    let data = await uoj.iteract({
-        submit: true,
-        id: submission['id'],
-        result: {
-            score: score,
-            time: Math.floor(time / 1000000),
-            memory: Math.floor(memory/1024),
-            status: "Judged",
-            details: details
-        }
-    })
-
-    console.log("submited!" + data)
-
-    judging = false;
+    return {
+        score: score,
+        time: time,
+        memory: memory,
+        details: details
+    }
 }
-
-/*
-onSubmission({"id":48,"problem_id":1,"content":
-{"file_name":"/submission/7274/1vuwQk9D0M1Vfr6wtizn",
-"config":[["answer_language","C++"],["problem_id","1"]]},"problem_mtime":1626432690})
-*/
 
 async function prepareForFile(submission: any) {
     let id: number = submission['problem_id'];

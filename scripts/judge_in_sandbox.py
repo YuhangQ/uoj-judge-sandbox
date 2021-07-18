@@ -16,11 +16,7 @@ res = 0
 
 os.system('rm -rf answer.result')
 
-
 inputfile = '../input/' + sys.argv[1]
-if submission['custom_test'] == 'on':
-    inputfile = 'input.txt'
-
 outputfile = 'answer.result'
 
 if lang == 'C++':
