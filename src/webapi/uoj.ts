@@ -55,7 +55,6 @@ export async function iteract(obj: any) {
         auth.append('password', conf.judger_password);
 
         for(let key in obj) {
-            console.log('---------------------')
             if(typeof(obj) == 'object') {
                 auth.append(key.toString(), JSON.stringify(obj[key]));
                 //console.log(JSON.stringify(obj))

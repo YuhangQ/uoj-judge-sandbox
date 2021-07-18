@@ -1,5 +1,6 @@
 
 
+import sys
 
 # submissin.conf load
 submission = {}
@@ -12,6 +13,11 @@ f.close()
 
 lang = submission['answer_language']
 
+res = 0
+
 import os
 if lang == 'C++':
-    os.system('g++ -x c++ answer.code  -o answer')
+    res = os.system('g++ 2>compile.result -x c++ answer.code -o answer')
+
+if res != 0: res = -1
+exit(res)

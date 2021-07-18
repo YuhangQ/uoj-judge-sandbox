@@ -89,7 +89,7 @@ export async function compile() {
                         limit: 0
                     }],
                 executable: "/bin/python3",
-                parameters: ['/bin/python3', '/sandbox/scripts/build_in_sandbox.py'],
+                parameters: ['/bin/python3', '/sandbox/scripts/build_in_sandbox.py', '>', 'answer.compile'],
                 environments: ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"],
                 stdin: "/dev/stdin",
                 stdout: "/dev/stdout",
@@ -97,7 +97,7 @@ export async function compile() {
                 time: 10 * 1000, // 1 minute, for a bash playground
                 mountProc: true,
                 redirectBeforeChroot: true,
-                memory: 102400 * 1024, // 100MB
+                memory: 1000 * 1024 * 1024, // 100MB
                 process: 30,
                 user: ssb.getUidAndGidInSandbox(rootfs, "root"),
                 cgroup: "asdf",
@@ -111,10 +111,10 @@ export async function compile() {
             // stdin.addListener("data", function (d) {
             //     sandboxedProcess.stop();
             // });
-    
+            
             sandboxedProcess.waitForStop().then(result => {
                 console.log("Your sandbox finished!" + JSON.stringify(result));
-                resolve()
+                resolve(result)
             });
             
         } catch (ex) {

@@ -12,7 +12,19 @@ lang = submission['answer_language']
 import os
 import sys
 
+res = 0
+
 os.system('rm -rf answer.result')
+
+
+inputfile = '../input/' + sys.argv[1]
+if submission['custom_test'] == 'on':
+    inputfile = 'input.txt'
+
+outputfile = 'answer.result'
+
 if lang == 'C++':
-    print('./answer < ../input/' + sys.argv[1] + ' > answer.result')
-    os.system('./answer < ../input/' + sys.argv[1] + ' > answer.result')
+    res = os.system('./answer < %s > %s ' % (inputfile, outputfile))
+
+if res != 0: res = -1
+exit(res)

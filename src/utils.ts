@@ -6,6 +6,12 @@ export function cmp(file1: string, file2: string) {
     return content1 == content2
 }
 
+export function outputTooMuch(file1: string, file2: string) {
+    let content1 = fs.readFileSync(file1).toString().replace(/\n/g, '').replace(/\r/g, '')
+    let content2 = fs.readFileSync(file2).toString().replace(/\n/g, '').replace(/\r/g, '');
+    return content1.length >= 100 && content1.length >= 2 * content2.length;
+}
+
 export function readProblemConf(file: string) {
     let lines = fs.readFileSync(file).toString().split('\n');
     let map: any = {};
