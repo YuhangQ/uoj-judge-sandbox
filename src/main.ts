@@ -6,7 +6,7 @@ import { execSync } from "child_process";
 import { conf } from "./config";
 import * as fs from "fs";
 import * as ssb from "./sandbox/sandbox";
-import { cmp, outputTooMuch, readProblemConf } from "./utils";
+import { cmp, outputTooMuch, readProblemConf, readSubmissionConf } from "./utils";
 
 let judging = false;
 
@@ -25,6 +25,7 @@ async function onSubmission(submission: any) {
     let res: any = await ssb.compile();
 
     let isCustomTest = (submission['is_custom_test'] != undefined)
+    let isContest = (submission['contest'] != undefined)
 
     // when compile error
     if(res['code'] != 0) {
@@ -52,6 +53,7 @@ async function onSubmission(submission: any) {
 
     let judgeResult;
     if(isCustomTest) judgeResult = await customJudge(submission, problemConf)
+    if(isContest) judgeResult = await contestJudge(submission, problemConf)
     else judgeResult = await normalJudge(submission, problemConf)
 
     
@@ -77,40 +79,7 @@ async function onSubmission(submission: any) {
     judging = false;
 }
 
-
-async function customJudge(submission: any, problemConf: any) {
-    let cnt = 0;
-    let time = 0;
-    let memory = 0;
-
-    uoj.updateStatus(submission['id'], `Judging With Your Input`);
-
-    let res: any = await ssb.judge(`../work/input.txt`, problemConf.time_limit, problemConf.memory_limit);
-
-    time = res['time']
-    memory = Math.max(memory, res['memory'])
-
-    let status;
-
-    switch(res['status']) {
-        case 1: status = 'Success'; break;
-        case 2: status = 'Time Limit Exceeded'; break;
-        case 3: status = 'Memory Limit Exceeded'; break;
-        default: status = 'No Comment';
-    }
-    if(res['status'] == 1 && res['code'] != '0') status = 'Runtime Error';
-
-    let details = `<tests><custom-test info="${status}" time="${Math.floor(res['time']/1000000)}" memory="${res['memory']/1024}"><out>${fs.readFileSync(tmpDir('/work/answer.result')).toString().substr(0, 100)}</out></custom-test></tests>`
-    let score = Math.floor(cnt / problemConf.n_tests * 100)
-
-    return {
-        score: score,
-        time: time,
-        memory: memory,
-        details: details
-    }
-}
-async function normalJudge(submission: any, problemConf: any) {
+async function contestJudge(submission: any, problemConf: any) {
     let cnt = 0;
     let time = 0;
     let memory = 0;
@@ -118,11 +87,13 @@ async function normalJudge(submission: any, problemConf: any) {
     let details = '<tests>'
 
     let n_tests = problemConf.n_tests;
+
+
     for(let i=1; i<=n_tests; i++) {
         //if(isCustomTest) uoj.updateStatus(submission['id'], `Judging With Your Input`);
         uoj.updateStatus(submission['id'], `Judging Test #${i}`);
 
-        let res: any = await ssb.judge(`pre${i}.in`, problemConf.time_limit, problemConf.memory_limit);
+        let res: any = await ssb.judge(`${problemConf.input_pre}${i}.${problemConf.input_suf}`, problemConf.time_limit, problemConf.memory_limit);
         let right = false;
 
 
@@ -155,6 +126,144 @@ async function normalJudge(submission: any, problemConf: any) {
     }
 
     details += '</tests>';
+    let score = Math.floor(cnt / problemConf.n_tests * 100)
+
+    return {
+        score: score,
+        time: time,
+        memory: memory,
+        details: details
+    }
+}
+async function normalJudge(submission: any, problemConf: any) {
+    let cnt = 0;
+    let time = 0;
+    let memory = 0;
+
+    let details = '<tests>'
+
+
+    let submissionConf = readSubmissionConf(tmpDir('/work/submission.conf'));
+
+    let testSampleOnly = submissionConf.test_sample_only != undefined;
+
+    console.log('>>>>>>>>>>>>>>>' + testSampleOnly)
+
+
+    // normal judge
+    let n_tests = problemConf.n_tests;
+    for(let i=1; i<=n_tests; i++) {
+        // when samples only
+        if(testSampleOnly) break;
+
+
+        uoj.updateStatus(submission['id'], `Judging Test #${i}`);
+
+        let res: any = await ssb.judge(`${problemConf.input_pre}${i}.${problemConf.input_suf}`, problemConf.time_limit, problemConf.memory_limit);
+        let right = false;
+
+
+        if(cmp(tmpDir('/work/answer.result'), 
+        tmpDir(`/data/output/${problemConf.output_pre}${i}.${problemConf.output_suf}`))) {
+            cnt++; right = true;
+        }
+        time += res['time']
+        memory = Math.max(memory, res['memory'])
+
+        let status;
+        switch(res['status']) {
+            case 1: status = 'Accepted'; break;
+            case 2: status = 'Time Limit Exceeded'; break;
+            case 3: status = 'Memory Limit Exceeded'; break;
+            default: status = 'No Comment';
+        }
+        if(status == 'Accepted' && !right) status = 'Wrong Answer';
+        if(outputTooMuch(tmpDir('/work/answer.result'), 
+        tmpDir(`/data/output/${problemConf.output_pre}${i}.${problemConf.output_suf}`))) {
+            status = "Output Limit Exceeded";
+        }
+        if(res['status'] == 1 && res['code'] != '0') status = 'Runtime Error';
+
+        details += `<test num="${i}" score="${right?100:0}" info="${status}" time="${Math.floor(res['time']/1000000)}" memory="${res['memory']/1024}">
+        <in>${fs.readFileSync(tmpDir(`/data/input/${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 100)}</in>
+        <out>${fs.readFileSync(tmpDir('/work/answer.result')).toString().substr(0, 100)}</out>
+        <res>${right?'right!':fs.readFileSync(tmpDir(`/data/output/${problemConf.output_pre}${i}.${problemConf.output_suf}`)).toString().substr(0, 20)}</res>
+        </test>`
+    }
+
+
+    if(testSampleOnly) {
+        for(let i=1; i<=problemConf.n_sample_tests; i++) {
+            uoj.updateStatus(submission['id'], `Judging Sample Test #${i}`);
+
+            let res: any = await ssb.judge(`ex_${problemConf.input_pre}${i}.${problemConf.input_suf}`, problemConf.time_limit, problemConf.memory_limit);
+            let right = false;
+
+
+            if(cmp(tmpDir('/work/answer.result'), 
+            tmpDir(`/data/output/${problemConf.output_pre}${i}.${problemConf.output_suf}`))) {
+                cnt++; right = true;
+            }
+            time += res['time']
+            memory = Math.max(memory, res['memory'])
+
+            let status;
+            switch(res['status']) {
+                case 1: status = 'Accepted'; break;
+                case 2: status = 'Time Limit Exceeded'; break;
+                case 3: status = 'Memory Limit Exceeded'; break;
+                default: status = 'No Comment';
+            }
+            if(status == 'Accepted' && !right) status = 'Wrong Answer';
+            if(outputTooMuch(tmpDir('/work/answer.result'), 
+            tmpDir(`/data/output/${problemConf.output_pre}${i}.${problemConf.output_suf}`))) {
+                status = "Output Limit Exceeded";
+            }
+            if(res['status'] == 1 && res['code'] != '0') status = 'Runtime Error';
+
+            details += `<test num="${i}" score="${right?100:0}" info="${status}" time="${Math.floor(res['time']/1000000)}" memory="${res['memory']/1024}">
+            <in>${fs.readFileSync(tmpDir(`/data/input/ex_${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 100)}</in>
+            <out>${fs.readFileSync(tmpDir('/work/answer.result')).toString().substr(0, 100)}</out>
+            <res>${right?'right!':fs.readFileSync(tmpDir(`/data/output/ex_${problemConf.output_pre}${i}.${problemConf.output_suf}`)).toString().substr(0, 20)}</res>
+            </test>`
+        }
+    }
+
+    details += '</tests>';
+    let score = Math.floor(cnt / problemConf.n_tests * 100)
+    if(testSampleOnly) score = Math.floor(cnt / problemConf.n_sample_tests * 100)
+
+    return {
+        score: score,
+        time: time,
+        memory: memory,
+        details: details
+    }
+}
+
+async function customJudge(submission: any, problemConf: any) {
+    let cnt = 0;
+    let time = 0;
+    let memory = 0;
+
+    uoj.updateStatus(submission['id'], `Judging With Your Input`);
+
+    let res: any = await ssb.judge(`../work/input.txt`, problemConf.time_limit, problemConf.memory_limit);
+
+    time = res['time']
+    memory = Math.max(memory, res['memory'])
+
+    let status;
+
+    switch(res['status']) {
+        case 1: status = 'Success'; break;
+        case 2: status = 'Time Limit Exceeded'; break;
+        case 3: status = 'Memory Limit Exceeded'; break;
+        default: status = 'No Comment';
+    }
+    if(res['status'] == 1 && res['code'] != '0') status = 'Runtime Error';
+
+    let details = `<tests><custom-test info="${status}" time="${Math.floor(res['time']/1000000)}" memory="${res['memory']/1024}"><out>${fs.readFileSync(tmpDir('/work/answer.result')).toString().substr(0, 100)}</out></custom-test></tests>`
     let score = Math.floor(cnt / problemConf.n_tests * 100)
 
     return {
