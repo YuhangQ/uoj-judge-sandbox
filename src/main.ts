@@ -6,17 +6,16 @@ import { execSync } from "child_process";
 import { conf } from "./config";
 import * as fs from "fs";
 import * as ssb from "./sandbox/sandbox";
+import { sleep } from "sleep";
 import { cmp, outputTooMuch, readProblemConf, readSubmissionConf } from "./utils";
-
-let judging = false;
 
 function tmpDir(uri: string = "") {
     return path.join(__dirname, "../tmp", uri)
 }
 
-async function onSubmission(submission: any) {
+let submissionBuffer: any = []
 
-    judging = true;
+async function onSubmission(submission: any) {
 
     let problemConf = await prepareForFile(submission);
 
@@ -25,7 +24,7 @@ async function onSubmission(submission: any) {
     let res: any = await ssb.compile();
 
     let isCustomTest = (submission['is_custom_test'] != undefined)
-    let isContest = (submission['contest'] != undefined)
+    //let isContest = (submission['contest'] != undefined)
 
     // when compile error
     if(res['code'] != 0) {
@@ -43,19 +42,15 @@ async function onSubmission(submission: any) {
         }
         if(isCustomTest) (submitData as any)['is_custom_test']  = true;
         await uoj.iteract(submitData)
-        judging = false;
         return;
     }
 
     uoj.updateStatus(submission['id'], 'Running')
 
-
-
     let judgeResult;
     if(isCustomTest) judgeResult = await customJudge(submission, problemConf)
-    if(isContest) judgeResult = await contestJudge(submission, problemConf)
+    //else if(isContest) judgeResult = await contestJudge(submission, problemConf)
     else judgeResult = await normalJudge(submission, problemConf)
-
     
     let submitData = {
         submit: true,
@@ -66,17 +61,23 @@ async function onSubmission(submission: any) {
             memory: Math.floor(judgeResult.memory/1024),
             status: "Judged",
             details: judgeResult.details
-        }
+        },
     }
 
     if(isCustomTest) (submitData as any)['is_custom_test']  = true;
 
-    console.log(judgeResult.details)
 
-    let data = await uoj.iteract(submitData)
-    console.log("submited!" + data)
+    //console.log("submit: ", submitData)
 
-    judging = false;
+    let data = await uoj.iteract(submitData) as string;
+
+    try {
+        data = data.substr(data.indexOf('}{') + 1)
+        submissionBuffer.push(JSON.parse(data));
+        console.log('judge get #' + JSON.parse(data)['id'])
+    } catch(e) {
+        
+    }
 }
 
 async function contestJudge(submission: any, problemConf: any) {
@@ -147,9 +148,6 @@ async function normalJudge(submission: any, problemConf: any) {
 
     let testSampleOnly = submissionConf.test_sample_only != undefined;
 
-    console.log('>>>>>>>>>>>>>>>' + testSampleOnly)
-
-
     // normal judge
     let n_tests = problemConf.n_tests;
     for(let i=1; i<=n_tests; i++) {
@@ -191,7 +189,6 @@ async function normalJudge(submission: any, problemConf: any) {
         </test>`
     }
 
-
     if(testSampleOnly) {
         for(let i=1; i<=problemConf.n_sample_tests; i++) {
             uoj.updateStatus(submission['id'], `Judging Sample Test #${i}`);
@@ -201,7 +198,7 @@ async function normalJudge(submission: any, problemConf: any) {
 
 
             if(cmp(tmpDir('/work/answer.result'), 
-            tmpDir(`/data/output/${problemConf.output_pre}${i}.${problemConf.output_suf}`))) {
+            tmpDir(`/data/output/ex_${problemConf.output_pre}${i}.${problemConf.output_suf}`))) {
                 cnt++; right = true;
             }
             time += res['time']
@@ -242,6 +239,7 @@ async function normalJudge(submission: any, problemConf: any) {
 }
 
 async function customJudge(submission: any, problemConf: any) {
+
     let cnt = 0;
     let time = 0;
     let memory = 0;
@@ -282,7 +280,6 @@ async function prepareForFile(submission: any) {
     execSync(`cd ${tmpDir('data')} && unzip -o ${id}.zip`)
     
     let problemConf = readProblemConf(tmpDir(`data/${id}/problem.conf`))
-    console.log(problemConf)
 
     execSync(`cd ${tmpDir(`data/${id}`)}\
     && mv *.${problemConf.input_suf} ../input/\
@@ -302,33 +299,49 @@ async function prepareForFile(submission: any) {
     return problemConf;
 }
 
-function checkForNewSubmission() {
-    if(judging) return;
-    const auth = new FormData.default();
-    auth.append('judger_name', conf.judger_name);
-    auth.append('password', conf.judger_password);
-    axios.default.post(uoj.url("/judge/submit"), auth, { headers: auth.getHeaders() })
-    .then((res: any) => {
-        let submission = res.data;
-        console.log(submission);
-        if(submission == "Nothing to judge") return;
-        judging = true;
-        onSubmission(submission)
-            .catch((e)=>{
-                uoj.iteract({
-                    submit: true,
-                    id: submission['id'],
-                    result: {
-                        score: 0,
-                        time: 0,
-                        memory: 0,
-                        status: "Judged",
-                        error: "Judgement Failed",
-                        details: `<error>评测机遇到了错误，请联系管理员！</error>`
-                    }
-                })
-            });
+
+async function checkForNewSubmission() {
+    return new Promise((resolve: any, reject: any)=>{
+        const auth = new FormData.default();
+        auth.append('judger_name', conf.judger_name);
+        auth.append('password', conf.judger_password);
+
+        axios.default.post(uoj.url("/judge/submit"), auth, { headers: auth.getHeaders() })
+        .then((res: any) => {
+            let submission = res.data;
+            if(submission != "Nothing to judge") {
+                
+                console.log('web get #' + submission['id'])
+                submissionBuffer.push(submission);
+            }
+            resolve();
+        })
     })
-    
 }
-setInterval(checkForNewSubmission, 1000);
+
+async function judgeLoop() {
+    while(true) {
+        await checkForNewSubmission();
+        while(submissionBuffer.length != 0) {
+            let submission = submissionBuffer.shift();
+            //console.log("judging #" + submission['id'] );
+            await onSubmission(submission)
+                .catch((e)=>{
+                    uoj.iteract({
+                        submit: true,
+                        id: submission['id'],
+                        result: {
+                            score: 0,
+                            time: 0,
+                            memory: 0,
+                            status: "Judged",
+                            error: "Judgement Failed",
+                            details: `<error>评测机遇到了错误，请联系管理员！</error>`
+                        }
+                    })
+                })
+        }
+        sleep(1);
+    }
+}
+judgeLoop()

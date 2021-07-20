@@ -59,11 +59,10 @@ export async function iteract(obj: any) {
                 auth.append(key.toString(), JSON.stringify(obj[key]));
                 //console.log(JSON.stringify(obj))
             } else {
-                auth.append(key.toString(), obj[key].toString());
+                auth.append(key.toString(), obj[key].toSring());
             }
         }
 
-        //console.log(auth)
 
         axios.default({
             url: url("/judge/submit"),
@@ -71,7 +70,6 @@ export async function iteract(obj: any) {
             data: auth,
             headers: auth.getHeaders()
         }).then((res)=>{
-            console.log(res.status)
             resolve(res.data)
         });
     });

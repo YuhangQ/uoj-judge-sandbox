@@ -12,9 +12,11 @@
     "axios": "^0.21.1",
     "form-data": "^4.0.0",
     "js-file-download": "^0.4.12",
+    "sleep": "^6.3.0",
     "unzip": "^0.1.11"
   },
   "devDependencies": {
+    "@types/sleep": "0.0.8",
     "@types/unzip": "^0.1.1"
   }
 }
