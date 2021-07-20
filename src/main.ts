@@ -15,6 +15,21 @@ function tmpDir(uri: string = "") {
 
 let submissionBuffer: any = []
 
+
+async function sendAndFetch(submitData: any) {
+    return new Promise((resolve: any, reject: any)=>{
+        uoj.iteract(submitData).then((data: any)=>{
+            try {
+                data = data.substr(data.indexOf('}{') + 1)
+                submissionBuffer.push(JSON.parse(data));
+                console.log('judge get #' + JSON.parse(data)['id'])
+            } catch(e) {
+                
+            }
+            resolve();
+        })
+    })
+}
 async function onSubmission(submission: any) {
 
     let problemConf = await prepareForFile(submission);
@@ -41,7 +56,7 @@ async function onSubmission(submission: any) {
             }
         }
         if(isCustomTest) (submitData as any)['is_custom_test']  = true;
-        await uoj.iteract(submitData)
+        await sendAndFetch(submitData);
         return;
     }
 
@@ -65,19 +80,7 @@ async function onSubmission(submission: any) {
     }
 
     if(isCustomTest) (submitData as any)['is_custom_test']  = true;
-
-
-    //console.log("submit: ", submitData)
-
-    let data = await uoj.iteract(submitData) as string;
-
-    try {
-        data = data.substr(data.indexOf('}{') + 1)
-        submissionBuffer.push(JSON.parse(data));
-        console.log('judge get #' + JSON.parse(data)['id'])
-    } catch(e) {
-        
-    }
+    await sendAndFetch(submitData);
 }
 
 async function contestJudge(submission: any, problemConf: any) {
