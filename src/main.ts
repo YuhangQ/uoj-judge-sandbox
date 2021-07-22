@@ -21,23 +21,19 @@ async function onSubmission(submission: any) {
     let problemConf = await prepareForFile(submission);
     let submissionConf = readSubmissionConf(tmpDir('/work/submission.conf'));
 
-
     let testSampleOnly = submissionConf.test_sample_only != undefined;
     let isCustomTest = (submission['is_custom_test'] != undefined)
 
-
-
     uoj.updateStatus(submission['id'], 'Compiling')
-    let res: any = await ssb.compile();
 
+    let res: any = await ssb.compile();
 
     // When Compile Error
     if(res['code'] != 0) {
-        await uoj.sendAndFetch(submission, 0, res['time'], res['memory'], 
+        let newSubmission = await uoj.sendAndFetch(submission, 0, res['time'], res['memory'], 
         `<error>${fs.readFileSync(tmpDir('/work/compile.result')).toString()}</error>`, 
-        "Compile Error").then((submission)=>{
-            submissionBuffer.push(submission);
-        });
+        "Compile Error");
+        if(newSubmission) submissionBuffer.push(newSubmission);
         return;
     }
 
@@ -48,7 +44,8 @@ async function onSubmission(submission: any) {
     else if(testSampleOnly) judgeResult = await sampleJudger.judge(submission, problemConf)
     else judgeResult = await normalJudger.judge(submission, problemConf)
     
-    uoj.sendAndFetch(submission, judgeResult.score, judgeResult.time, judgeResult.memory, judgeResult.details, undefined);
+    let newSubmission = await uoj.sendAndFetch(submission, judgeResult.score, judgeResult.time, judgeResult.memory, judgeResult.details, undefined)
+    if(newSubmission) submissionBuffer.push(newSubmission);
 }
 
 async function prepareForFile(submission: any) {
@@ -61,6 +58,7 @@ async function prepareForFile(submission: any) {
     let problemConf = readProblemConf(tmpDir(`data/${id}/problem.conf`))
 
 
+
     execSync(`cd ${tmpDir(`data/${id}`)}\
     && mv ${problemConf.input_pre}*.${problemConf.input_suf} ../input/\
     && mv ${problemConf.output_pre}*.${problemConf.output_suf} ../output/\
@@ -68,9 +66,18 @@ async function prepareForFile(submission: any) {
     && mv ex_${problemConf.output_pre}*.${problemConf.output_suf} ../output/`)
 
 
-    execSync(`rm -rf ${tmpDir(`data/${id}*`)}`)
+    
 
     execSync(`rm -rf ${tmpDir(`work/*`)}`)
+
+    let checker = problemConf.use_builtin_checker
+    if(checker) execSync(`cp ${tmpDir('../checkers')}/${checker} ${tmpDir('/work/chk')}`)
+    else execSync(`cp ${tmpDir(`data/${id}`)}/chk ${tmpDir('/work/chk')}`)
+
+    execSync(`rm -rf ${tmpDir(`data/${id}*`)}`)
+
+    
+
     await uoj.download(submission['content']['file_name'] , tmpDir("/work/all.zip"))
     execSync(`cd ${tmpDir('work')} && unzip -o all.zip && rm -rf ./all.zip`)
 
@@ -94,8 +101,6 @@ async function checkForNewSubmission() {
         .then((res: any) => {
             let submission = res.data;
             if(submission != "Nothing to judge") {
-                
-                console.log('web get #' + submission['id'])
                 submissionBuffer.push(submission);
             }
             resolve();
@@ -108,10 +113,9 @@ async function judgeLoop() {
         await checkForNewSubmission();
         while(submissionBuffer.length != 0) {
             let submission = submissionBuffer.shift();
-            //console.log("judging #" + submission['id'] );
             await onSubmission(submission)
             .catch(e=>uoj.sendAndFetch(submission, 0, 0, 0, 
-                "<error>评测机遇到了错误，请联系管理员！</error>", "Judgement Failed"))
+                `<error>评测机遇到了错误，请联系管理员！\n${e}</error>`, "Judgement Failed"))
         }
         sleep(1);
     }

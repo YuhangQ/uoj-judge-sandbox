@@ -47,12 +47,14 @@ export function sendAndFetch(submission: any, score: number, time: number, memor
 
         if(submission['is_custom_test'] != undefined) (submitData as any)['is_custom_test']  = true;
 
+        //console.log(submitData)
+
         iteract(submitData).then((data: any)=>{
             try {
                 data = data.substr(data.indexOf('}{') + 1)
                 resolve(JSON.parse(data));
             } catch(e) {
-
+                resolve(undefined);
             }
         });
     })
