@@ -45,8 +45,6 @@ export function sendAndFetch(submission: any, score: number, time: number, memor
 
         if(error) (submitData as any)['result']['error']  = error;
 
-
-
         if(submission['is_custom_test'] != undefined) (submitData as any)['is_custom_test']  = true;
 
         iteract(submitData).then((data: any)=>{
@@ -89,12 +87,10 @@ export async function iteract(obj: any) {
         for(let key in obj) {
             if(typeof(obj) == 'object') {
                 auth.append(key.toString(), JSON.stringify(obj[key]));
-                //console.log(JSON.stringify(obj))
             } else {
                 auth.append(key.toString(), obj[key].toSring());
             }
         }
-
 
         axios.default({
             url: url("/judge/submit"),

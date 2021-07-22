@@ -48,8 +48,48 @@ export async function judge(submission: any, problemConf: any) {
         </test>`
     }
 
-    details += '</tests>';
     let score = Math.floor(cnt / problemConf.n_tests * 100)
+
+    
+
+    // extra test
+    if(score == 100) {
+        let extraSuccess = true;
+        let status: string = "Unkown";
+        let i;
+        for(i=problemConf.n_sample_tests+1; i<=problemConf.n_ex_tests; i++) {
+            uoj.updateStatus(submission['id'], `Judging Extra Test #${i}`);
+            let res: any = await ssb.judge(`ex_${problemConf.input_pre}${i}.${problemConf.input_suf}`, problemConf.time_limit, problemConf.memory_limit);
+
+            if(!utils.cmp(utils.tmpDir('/work/answer.result'), 
+            utils.tmpDir(`/data/output/ex_${problemConf.output_pre}${i}.${problemConf.output_suf}`))) {
+                extraSuccess = false;
+            }
+            switch(res['status']) {
+                case 1: status = 'Accepted'; break;
+                case 2: status = 'Time Limit Exceeded'; break;
+                case 3: status = 'Memory Limit Exceeded'; break;
+                default: status = 'No Comment';
+            }
+            if(status == 'Accepted' && !extraSuccess) status = 'Wrong Answer';
+
+            if(status != 'Accepted') {
+                extraSuccess = false;
+                break;
+            }
+        }
+        if(extraSuccess) {
+            details += '<test num="-1" score="0" info="Extra Test Passed" time="-1" memory="-1"><in></in><out></out><res></res></test>'
+        } else {
+            score = 97;
+            details += `<test num="-1" score="-3" info="Extra Test Failed : ${status} on ${i}" time="-1" memory="-1"><in></in><out></out><res></res></test>`
+        }
+    }
+
+
+
+    details += '</tests>';
+    
 
     return {
         score: score,
