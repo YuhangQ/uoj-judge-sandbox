@@ -39,11 +39,11 @@ export async function check(inputFile: string, ansFile: string) {
                     }
                 ],
                 executable: "./chk",
-                parameters: ['./chk', '../data/input/' + inputFile , 'answer.result' , '../data/output/' + ansFile],
+                parameters: ['./chk', workDir('../input/') + inputFile , 'answer.result' , workDir('../output/') + ansFile],
                 environments: ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"],
                 stdin: "/dev/stdin",
-                stdout: "/dev/stdout",
-                stderr: "/dev/stdout",
+                stdout: tmpDir("/work/checker.result"),
+                stderr: tmpDir("/work/checker.result"),
                 time: 1 * 1000, // 1 minute, for a bash playground
                 mountProc: true,
                 redirectBeforeChroot: true,
@@ -64,11 +64,11 @@ export async function check(inputFile: string, ansFile: string) {
     
             sandboxedProcess.waitForStop().then(result => {
                 console.log("Your sandbox finished!" + JSON.stringify(result));
-                //readFileSync(tmpDir('/work/checker.result'))
-                resolve("fuck")
+                resolve(readFileSync(tmpDir('/work/checker.result')).toString())
             });
         } catch (ex) {
             console.log("Whooops! " + ex.toString());
+            reject(ex);
         }
     })
 }
@@ -101,7 +101,7 @@ export async function judge(inputfile: string, timeLimit: number, memLimit: numb
                 environments: ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"],
                 stdin: "/dev/stdin",
                 stdout: "/dev/stdout",
-                stderr: "/dev/stderr",
+                stderr: "/dev/stdout",
                 time: timeLimit * 1000, // 1 minute, for a bash playground
                 mountProc: true,
                 redirectBeforeChroot: true,
