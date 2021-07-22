@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as axios from "axios";
 import * as FormData from "form-data";
+import * as utils from "../utils";
 import * as util from "util";
 import * as stream from "stream";
 import { conf } from "../config";
@@ -26,6 +27,37 @@ export function updateStatus(id: number, status: string, is_custom_test = false)
         })
     }
     
+}
+
+export function sendAndFetch(submission: any, score: number, time: number, memory: number, details: string, error: any) {
+    return new Promise((resolve: any, reject: any)=>{
+        let submitData = {
+            submit: true,
+            id: submission['id'],
+            result: {
+                score: score,
+                time: Math.floor(time / 1000000),
+                memory: Math.floor(memory / 1024),
+                status: "Judged",
+                details: details
+            }
+        }
+
+        if(error) (submitData as any)['result']['error']  = error;
+
+
+
+        if(submission['is_custom_test'] != undefined) (submitData as any)['is_custom_test']  = true;
+
+        iteract(submitData).then((data: any)=>{
+            try {
+                data = data.substr(data.indexOf('}{') + 1)
+                resolve(JSON.parse(data));
+            } catch(e) {
+
+            }
+        });
+    })
 }
 
 const finished = util.promisify(stream.finished);

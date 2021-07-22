@@ -1,4 +1,9 @@
 import * as fs from "fs"
+import * as path from "path"
+
+export function tmpDir(uri: string = "") {
+    return path.join(__dirname, "../tmp", uri)
+}
 
 
 export function cmp(file1: string, file2: string) {
@@ -38,10 +43,10 @@ export function readProblemConf(file: string) {
         n_tests: parseInt(map['n_tests']),
         n_ex_tests: parseInt(map['n_ex_tests']),
         n_sample_tests: parseInt(map['n_sample_tests']),
-        input_pre: map['input_pre'],
-        input_suf: map['input_suf'],
-        output_pre: map['output_pre'],
-        output_suf: map['output_suf'],
+        input_pre: map['input_pre'] ? map['input_pre'] : "input",
+        input_suf: map['input_suf'] ? map['input_suf'] : "txt",
+        output_pre: map['output_pre'] ? map['output_pre'] : "output",
+        output_suf: map['output_suf'] ? map['output_suf'] : "txt",
         time_limit: parseInt(map['time_limit']),
         memory_limit: parseInt(map['memory_limit'])
     }
