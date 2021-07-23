@@ -27,7 +27,8 @@ export function readSubmissionConf(file: string) {
     return {
         answer_language: map['answer_language'],
         problem_id: map['problem_id'],
-        test_sample_only: map['test_sample_only']
+        test_sample_only: map['test_sample_only'],
+        validate_input_before_test: map['validate_input_before_test']
     }
 }
 

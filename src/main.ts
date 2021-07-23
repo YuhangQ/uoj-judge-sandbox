@@ -18,6 +18,9 @@ let submissionBuffer: any = []
 
 async function onSubmission(submission: any) {
 
+    console.log(JSON.stringify(submission))
+
+
     let problemConf = await prepareForFile(submission);
     let submissionConf = readSubmissionConf(tmpDir('/work/submission.conf'));
 
@@ -57,24 +60,17 @@ async function prepareForFile(submission: any) {
     
     let problemConf = readProblemConf(tmpDir(`data/${id}/problem.conf`))
 
-
-
     execSync(`cd ${tmpDir(`data/${id}`)}\
     && mv ${problemConf.input_pre}*.${problemConf.input_suf} ../input/\
     && mv ${problemConf.output_pre}*.${problemConf.output_suf} ../output/\
     && mv ex_${problemConf.input_pre}*.${problemConf.input_suf} ../input/\
     && mv ex_${problemConf.output_pre}*.${problemConf.output_suf} ../output/`)
 
-
-    
-
     execSync(`rm -rf ${tmpDir(`work/*`)}`)
 
     let checker = problemConf.use_builtin_checker
     if(checker) execSync(`cp ${tmpDir('../checkers')}/${checker} ${tmpDir('/work/chk')}`)
-    else execSync(`cp ${tmpDir(`data/${id}`)}/chk ${tmpDir('/work/chk')}`)
-
-    execSync(`rm -rf ${tmpDir(`data/${id}*`)}`)
+    else execSync(`mv ${tmpDir(`data/${id}`)}/chk ${tmpDir('/work/chk')}`)
 
     
 
@@ -86,6 +82,13 @@ async function prepareForFile(submission: any) {
         submitConf += item[0] + " " + item[1] + '\n';
     }
     fs.writeFileSync(tmpDir("/work/submission.conf"), submitConf)
+
+    if(readSubmissionConf(tmpDir('/work/submission.conf'))['validate_input_before_test'] == 'on') {
+        execSync(`mv ${tmpDir(`data/${id}`)}/std ${tmpDir('/work/std')}`)
+        execSync(`mv ${tmpDir(`data/${id}`)}/val ${tmpDir('/work/val')}`)
+    }
+
+    execSync(`rm -rf ${tmpDir(`data/${id}*`)}`)
 
     return problemConf;
 }

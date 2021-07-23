@@ -1,4 +1,4 @@
-import * as utils from "../utils";
+import { tmpDir, readProblemConf, outputTooMuch, readSubmissionConf } from "../utils";
 import * as ssb from "../sandbox/sandbox";
 import * as uoj from "../webapi/uoj";
 import * as fs from "fs";
@@ -10,11 +10,27 @@ export async function judge(submission: any, problemConf: any) {
 
     let details = '<tests>'
 
+    let submissionConf = readSubmissionConf(tmpDir('/work/submission.conf'));
+
     // normal judge
     let n_tests = problemConf.n_tests;
     for (let i = 1; i <= n_tests; i++) {
 
         uoj.updateStatus(submission['id'], `Judging Test #${i}`);
+
+        if(submissionConf.validate_input_before_test == 'on') {
+            let res = await ssb.value(`${problemConf.input_pre}${i}.${problemConf.input_suf}`) as string;
+            let invalid = res.startsWith('FAIL');
+            if(invalid) {
+                details += `<test num="${i}" score="0" info="Invalid Input">
+                <in>${fs.readFileSync(tmpDir(`/data/input/${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 100)}</in>
+                <out></out>
+                <res>${res}</res>
+                </test>`
+                continue;
+            }
+        }
+
 
         let res: any = await ssb.judge(`${problemConf.input_pre}${i}.${problemConf.input_suf}`, problemConf.time_limit, problemConf.memory_limit);
         time += res['time']
@@ -28,8 +44,8 @@ export async function judge(submission: any, problemConf: any) {
             case 3: status = 'Memory Limit Exceeded'; break;
             default: status = 'No Comment';
         }
-        if (utils.outputTooMuch(utils.tmpDir('/work/answer.result'),
-            utils.tmpDir(`/data/output/${problemConf.output_pre}${i}.${problemConf.output_suf}`))) {
+        if (outputTooMuch(tmpDir('/work/answer.result'),
+            tmpDir(`/data/output/${problemConf.output_pre}${i}.${problemConf.output_suf}`))) {
             status = "Output Limit Exceeded";
         }
         if (res['status'] == 1 && res['code'] != '0') status = 'Runtime Error';
@@ -48,8 +64,8 @@ export async function judge(submission: any, problemConf: any) {
 
 
         details += `<test num="${i}" score="${status == 'Accepted' ? "100" : "0"}" info="${status}" time="${Math.floor(res['time'] / 1000000)}" memory="${res['memory'] / 1024}">
-        <in>${fs.readFileSync(utils.tmpDir(`/data/input/${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 100)}</in>
-        <out>${fs.readFileSync(utils.tmpDir('/work/answer.result')).toString().substr(0, 100)}</out>
+        <in>${fs.readFileSync(tmpDir(`/data/input/${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 100)}</in>
+        <out>${fs.readFileSync(tmpDir('/work/answer.result')).toString().substr(0, 100)}</out>
         <res>${chkResult}</res>
         </test>`
     }
@@ -99,8 +115,8 @@ export async function judge(submission: any, problemConf: any) {
         } else {
             score = 97;
             details += `<test num="-1" score="-3" info="Extra Test Failed : ${status} on ${i}" time="-1" memory="-1">
-            <in>${fs.readFileSync(utils.tmpDir(`/data/input/ex_${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 100)}</in>
-            <out>${fs.readFileSync(utils.tmpDir('/work/answer.result')).toString().substr(0, 100)}</out>
+            <in>${fs.readFileSync(tmpDir(`/data/input/ex_${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 100)}</in>
+            <out>${fs.readFileSync(tmpDir('/work/answer.result')).toString().substr(0, 100)}</out>
             <res>${chkResult}</res>
             </test>`
         }
