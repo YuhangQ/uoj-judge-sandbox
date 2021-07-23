@@ -46,8 +46,12 @@ export function sendAndFetch(submission: any, score: number, time: number, memor
         if(error) (submitData as any)['result']['error']  = error;
 
         if(submission['is_custom_test'] != undefined) (submitData as any)['is_custom_test']  = true;
+        if(submission['is_hack'] != undefined) {
+            (submitData as any)['is_hack']  = true;
+            submitData.id = submission['hack']['id'];
+        }
 
-        //console.log(submitData)
+        console.log(submitData)
 
         iteract(submitData).then((data: any)=>{
             try {

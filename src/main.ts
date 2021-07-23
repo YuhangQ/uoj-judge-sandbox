@@ -13,6 +13,7 @@ import { tmpDir, readProblemConf, readSubmissionConf } from "./utils";
 import * as normalJudger from "./judger/normal";
 import * as customJudger from "./judger/custom";
 import * as sampleJudger from "./judger/sample";
+import * as hackJudger from "./judger/hack";
 
 let submissionBuffer: any = []
 
@@ -26,6 +27,7 @@ async function onSubmission(submission: any) {
 
     let testSampleOnly = submissionConf.test_sample_only != undefined;
     let isCustomTest = (submission['is_custom_test'] != undefined)
+    let isHack = (submission['is_hack'] != undefined);
 
     uoj.updateStatus(submission['id'], 'Compiling')
 
@@ -43,8 +45,9 @@ async function onSubmission(submission: any) {
     uoj.updateStatus(submission['id'], 'Running')
 
     let judgeResult;
-    if(isCustomTest) judgeResult = await customJudger.judge(submission, problemConf)
-    else if(testSampleOnly) judgeResult = await sampleJudger.judge(submission, problemConf)
+    if(isCustomTest) judgeResult = await customJudger.judge(submission, problemConf);
+    else if(isHack) judgeResult = await hackJudger.judge(submission, problemConf);
+    else if(testSampleOnly) judgeResult = await sampleJudger.judge(submission, problemConf);
     else judgeResult = await normalJudger.judge(submission, problemConf)
     
     let newSubmission = await uoj.sendAndFetch(submission, judgeResult.score, judgeResult.time, judgeResult.memory, judgeResult.details, undefined)
@@ -86,6 +89,12 @@ async function prepareForFile(submission: any) {
     if(readSubmissionConf(tmpDir('/work/submission.conf'))['validate_input_before_test'] == 'on') {
         execSync(`mv ${tmpDir(`data/${id}`)}/std ${tmpDir('/work/std')}`)
         execSync(`mv ${tmpDir(`data/${id}`)}/val ${tmpDir('/work/val')}`)
+    }
+
+    if(submission['is_hack'] != undefined) {
+        await uoj.download(submission['hack']['input'], tmpDir('/work/hack.input'));
+        let hack = fs.readFileSync(tmpDir('/work/hack.input')).toString().replace(/\r/g, '');
+        fs.writeFileSync(tmpDir('/work/hack.input'), hack)
     }
 
     execSync(`rm -rf ${tmpDir(`data/${id}*`)}`)

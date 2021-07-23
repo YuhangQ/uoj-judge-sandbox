@@ -81,6 +81,21 @@ export async function judge(submission: any, problemConf: any) {
         let i;
         for (i = problemConf.n_sample_tests + 1; i <= problemConf.n_ex_tests; i++) {
             uoj.updateStatus(submission['id'], `Judging Extra Test #${i}`);
+
+
+            if(submissionConf.validate_input_before_test == 'on') {
+                let res = await ssb.value(`${problemConf.input_pre}${i}.${problemConf.input_suf}`) as string;
+                let invalid = res.startsWith('FAIL');
+                if(invalid) {
+                    details += `<test num="-1" score="0" info="Extra Test Invalid Input">
+                    <in>${fs.readFileSync(tmpDir(`/data/input/ex_${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 100)}</in>
+                    <out></out>
+                    <res>${res}</res>
+                    </test>`
+                    continue;
+                }
+            }
+
             let res: any = await ssb.judge(`ex_${problemConf.input_pre}${i}.${problemConf.input_suf}`, problemConf.time_limit, problemConf.memory_limit);
 
             switch (res['status']) {

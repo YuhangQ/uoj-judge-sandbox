@@ -2,6 +2,7 @@ import * as utils from "../utils";
 import * as ssb from "../sandbox/sandbox";
 import * as uoj from "../webapi/uoj";
 import * as fs from "fs";
+import { tmpDir, readProblemConf, outputTooMuch, readSubmissionConf } from "../utils";
 
 export async function judge(submission: any, problemConf: any) {
     let cnt = 0;
@@ -10,8 +11,24 @@ export async function judge(submission: any, problemConf: any) {
 
     let details = '<tests>'
 
+    let submissionConf = readSubmissionConf(tmpDir('/work/submission.conf'));
+
     for(let i=1; i<=problemConf.n_sample_tests; i++) {
         uoj.updateStatus(submission['id'], `Judging Sample Test #${i}`);
+
+        if(submissionConf.validate_input_before_test == 'on') {
+            let res = await ssb.value(`${problemConf.input_pre}${i}.${problemConf.input_suf}`) as string;
+            let invalid = res.startsWith('FAIL');
+            if(invalid) {
+                details += `<test num="${i}" score="0" info="Invalid Input">
+                <in>${fs.readFileSync(tmpDir(`/data/input/${problemConf.input_pre}${i}.${problemConf.input_suf}`)).toString().substr(0, 100)}</in>
+                <out></out>
+                <res>${res}</res>
+                </test>`
+                continue;
+            }
+        }
+
 
         let res: any = await ssb.judge(`ex_${problemConf.input_pre}${i}.${problemConf.input_suf}`, problemConf.time_limit, problemConf.memory_limit);
         time += res['time']
