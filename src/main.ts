@@ -57,7 +57,12 @@ async function onSubmission(submission: any) {
 async function prepareForFile(submission: any) {
     let id: number = submission['problem_id'];
     // get new data save to /tmp/data
-    execSync(`rm -rf ${tmpDir('data/input/*')} && rm -rf ${tmpDir('data/output/*')}`)
+    execSync(`rm -rf ${tmpDir('data/*')}`)
+    execSync(`rm -rf ${tmpDir(`work/*`)}`)
+    execSync(`mkdir ${tmpDir(`data/input`)}`)
+    execSync(`mkdir ${tmpDir(`data/output`)}`)
+
+
     await uoj.download('/problem/' + id, tmpDir(`/data/${id}.zip`))
     execSync(`cd ${tmpDir('data')} && unzip -o ${id}.zip`)
     
@@ -69,7 +74,7 @@ async function prepareForFile(submission: any) {
     && mv ex_${problemConf.input_pre}*.${problemConf.input_suf} ../input/\
     && mv ex_${problemConf.output_pre}*.${problemConf.output_suf} ../output/`)
 
-    execSync(`rm -rf ${tmpDir(`work/*`)}`)
+    
 
     let checker = problemConf.use_builtin_checker
     if(checker) execSync(`cp ${tmpDir('../checkers')}/${checker} ${tmpDir('/work/chk')}`)
@@ -86,18 +91,14 @@ async function prepareForFile(submission: any) {
     }
     fs.writeFileSync(tmpDir("/work/submission.conf"), submitConf)
 
-    if(readSubmissionConf(tmpDir('/work/submission.conf'))['validate_input_before_test'] == 'on') {
-        execSync(`mv ${tmpDir(`data/${id}`)}/std ${tmpDir('/work/std')}`)
-        execSync(`mv ${tmpDir(`data/${id}`)}/val ${tmpDir('/work/val')}`)
-    }
+    execSync(`mv ${tmpDir(`data/${id}`)}/std ${tmpDir('/work/std')}`)
+    execSync(`mv ${tmpDir(`data/${id}`)}/val ${tmpDir('/work/val')}`)
 
     if(submission['is_hack'] != undefined) {
         await uoj.download(submission['hack']['input'], tmpDir('/work/hack.input'));
         let hack = fs.readFileSync(tmpDir('/work/hack.input')).toString().replace(/\r/g, '');
         fs.writeFileSync(tmpDir('/work/hack.input'), hack)
     }
-
-    execSync(`rm -rf ${tmpDir(`data/${id}*`)}`)
 
     return problemConf;
 }

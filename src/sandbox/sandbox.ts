@@ -15,6 +15,7 @@ export function workDir(uri: string = "") {
 }
 
 export async function value(inputFile: string) {
+    console.log("sandbox value:")
     return new Promise((resolve: any, reject: any)=>{
         try {
             const rootfs = "/opt/sandbox-test/rootfs"
@@ -70,6 +71,7 @@ export async function value(inputFile: string) {
 }
 
 export async function check(inputFile: string, ansFile: string) {
+    console.log("sandbox check:")
     return new Promise((resolve: any, reject: any)=>{
         try {
             const rootfs = "/opt/sandbox-test/rootfs"
@@ -129,6 +131,7 @@ export async function check(inputFile: string, ansFile: string) {
 }
 
 export async function judge(inputfile: string, timeLimit: number, memLimit: number) {
+    console.log("sandbox judge:")
     return new Promise((resolve: any, reject: any)=>{
         try {
             const rootfs = "/opt/sandbox-test/rootfs"
@@ -187,6 +190,7 @@ export async function judge(inputfile: string, timeLimit: number, memLimit: numb
 
 
 export async function std(timeLimit: number, memLimit: number) {
+    console.log("sandbox std:")
     return new Promise((resolve: any, reject: any)=>{
         try {
             const rootfs = "/opt/sandbox-test/rootfs"
@@ -246,6 +250,7 @@ export async function std(timeLimit: number, memLimit: number) {
 
 
 export async function compile() {
+    console.log("sandbox compile:")
     return new Promise((resolve: any, reject: any)=>{
         try {
             const rootfs = "/opt/sandbox-test/rootfs"

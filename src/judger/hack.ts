@@ -3,6 +3,7 @@ import * as ssb from "../sandbox/sandbox";
 import * as uoj from "../webapi/uoj";
 import * as fs from "fs";
 import { tmpDir, readProblemConf, outputTooMuch, readSubmissionConf } from "../utils";
+import { execSync } from "child_process";
 
 export async function judge(submission: any, problemConf: any) {
 
@@ -18,7 +19,7 @@ export async function judge(submission: any, problemConf: any) {
 
 
     let details: string;
-    let score = 0;
+    let score = 1;
 
 
     if(invalid) {
@@ -45,22 +46,24 @@ export async function judge(submission: any, problemConf: any) {
 
         await ssb.std(problemConf.time_limit, problemConf.memory_limit);
 
+        execSync(`chmod 777 ${tmpDir('/work/std.result')}`)
+
         let chkResult: string;
         try {
-            chkResult = await ssb.check(`../../work/hack.input`, `../../work/std.result`) as string;
+            chkResult = await ssb.check(`../work/hack.input`, `../work/std.result`) as string;
         } catch (e) {
             chkResult = "chk.cpp runtime error: " + e;
         }
 
         if (chkResult.startsWith("ok")) {
             status = 'Accepted';
+            score = 100;
         }
 
-        details = `<tests><test num="0" score="100" info="${status}" time="${Math.floor(res['time']/1000000)}" memory="${res['memory']/1024}">
+        details = `<tests><test num="-1" score="${score}" info="${status}" time="${Math.floor(res['time']/1000000)}" memory="${res['memory']/1024}">
             <in>${fs.readFileSync(utils.tmpDir('/work/hack.input')).toString().substr(0, 100)}</in>
             <out>${fs.readFileSync(utils.tmpDir('/work/answer.result')).toString().substr(0, 100)}</out>
             <res>${chkResult}</res></test></tests>`
-        score = Math.floor(cnt / problemConf.n_tests * 100)
     }
 
     return {

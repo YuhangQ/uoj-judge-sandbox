@@ -74,6 +74,8 @@ export async function judge(submission: any, problemConf: any) {
     let chkResult: string = "No Checker Output";
 
 
+    console.log("extra_test");
+
     // extra test
     if (score == 100) {
         let extraSuccess = true;
@@ -84,7 +86,7 @@ export async function judge(submission: any, problemConf: any) {
 
 
             if(submissionConf.validate_input_before_test == 'on') {
-                let res = await ssb.value(`${problemConf.input_pre}${i}.${problemConf.input_suf}`) as string;
+                let res = await ssb.value(`ex_${problemConf.input_pre}${i}.${problemConf.input_suf}`) as string;
                 let invalid = res.startsWith('FAIL');
                 if(invalid) {
                     details += `<test num="-1" score="0" info="Extra Test Invalid Input">
