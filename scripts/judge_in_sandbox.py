@@ -19,8 +19,12 @@ os.system('rm -rf answer.result')
 inputfile = '../input/' + sys.argv[1]
 outputfile = 'answer.result'
 
-if lang == 'C++':
+if lang == 'C++' or lang == 'C' or lang == 'C++11':
     res = os.system('./answer < %s > %s ' % (inputfile, outputfile))
+if lang == 'Python3':
+    res = os.system('python3 ./answer.code < %s > %s ' % (inputfile, outputfile))
+if lang == 'Python2':
+    res = os.system('python2 ./answer.code < %s > %s ' % (inputfile, outputfile))
 
 if res != 0: res = -1
 exit(res)

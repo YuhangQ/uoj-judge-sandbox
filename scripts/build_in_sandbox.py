@@ -17,7 +17,10 @@ res = 0
 
 import os
 if lang == 'C++':
-    res = os.system('g++ 2>compile.result -x c++ answer.code -o answer')
+    if('withImplementer' in sys.argv):
+        res = os.system('g++ 2>compile.result -x c++ answer.code implementer.cpp -o answer')
+    else:
+        res = os.system('g++ 2>compile.result -x c++ answer.code -o answer')
 
 if res != 0: res = -1
 exit(res)

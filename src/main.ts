@@ -1,27 +1,25 @@
 import * as axios from "axios";
 import * as FormData from "form-data";
 import * as uoj from "./webapi/uoj";
-import * as path from "path";
 import { execSync } from "child_process";
 import { conf } from "./config";
 import * as fs from "fs";
-import * as ssb from "./sandbox/sandbox";
+import * as ssb from "./sandbox/sandbox";;
+import * as sampleJudger from "./judger/sample";
+import * as hackJudger from "./judger/hack";
 import { sleep } from "sleep";
 import { tmpDir, readProblemConf, readSubmissionConf } from "./utils";
 
 // import judgers
 import * as normalJudger from "./judger/normal";
-import * as customJudger from "./judger/custom";
-import * as sampleJudger from "./judger/sample";
-import * as hackJudger from "./judger/hack";
+import * as customJudger from "./judger/custom"
+import * as answerJudger from "./judger/answer"
 
 let submissionBuffer: any = []
 
 async function onSubmission(submission: any) {
 
     console.log(JSON.stringify(submission))
-
-
     let problemConf = await prepareForFile(submission);
     let submissionConf = readSubmissionConf(tmpDir('/work/submission.conf'));
 
@@ -29,17 +27,23 @@ async function onSubmission(submission: any) {
     let isCustomTest = (submission['is_custom_test'] != undefined)
     let isHack = (submission['is_hack'] != undefined);
 
-    uoj.updateStatus(submission['id'], 'Compiling')
+    let isAnswer = (problemConf.submit_answer == 'on')
 
-    let res: any = await ssb.compile();
+    let withImplementer = (problemConf.with_implementer == 'on')
 
-    // When Compile Error
-    if(res['code'] != 0) {
-        let newSubmission = await uoj.sendAndFetch(submission, 0, res['time'], res['memory'], 
-        `<error>${fs.readFileSync(tmpDir('/work/compile.result')).toString()}</error>`, 
-        "Compile Error");
-        if(newSubmission) submissionBuffer.push(newSubmission);
-        return;
+
+    if(!isAnswer) {
+        uoj.updateStatus(submission['id'], 'Compiling')
+        let res: any = await ssb.compile(withImplementer);
+
+        // When Compile Error
+        if(res['code'] != 0) {
+            let newSubmission = await uoj.sendAndFetch(submission, 0, res['time'], res['memory'], 
+            `<error>${fs.readFileSync(tmpDir('/work/compile.result')).toString()}</error>`, 
+            "Compile Error");
+            if(newSubmission) submissionBuffer.push(newSubmission);
+            return;
+        }
     }
 
     uoj.updateStatus(submission['id'], 'Running')
@@ -48,6 +52,7 @@ async function onSubmission(submission: any) {
     if(isCustomTest) judgeResult = await customJudger.judge(submission, problemConf);
     else if(isHack) judgeResult = await hackJudger.judge(submission, problemConf);
     else if(testSampleOnly) judgeResult = await sampleJudger.judge(submission, problemConf);
+    else if(isAnswer)judgeResult = await answerJudger.judge(submission, problemConf);
     else judgeResult = await normalJudger.judge(submission, problemConf)
     
     let newSubmission = await uoj.sendAndFetch(submission, judgeResult.score, judgeResult.time, judgeResult.memory, judgeResult.details, undefined)
@@ -68,13 +73,17 @@ async function prepareForFile(submission: any) {
     
     let problemConf = readProblemConf(tmpDir(`data/${id}/problem.conf`))
 
+    try {
     execSync(`cd ${tmpDir(`data/${id}`)}\
     && mv ${problemConf.input_pre}*.${problemConf.input_suf} ../input/\
     && mv ${problemConf.output_pre}*.${problemConf.output_suf} ../output/\
     && mv ex_${problemConf.input_pre}*.${problemConf.input_suf} ../input/\
     && mv ex_${problemConf.output_pre}*.${problemConf.output_suf} ../output/`)
-
+    } catch(e: any) {}
     
+    try {
+        execSync(`mv ${tmpDir(`data/${id}/require/*`)} ${tmpDir('/work')}`)
+    } catch(e: any) {}
 
     let checker = problemConf.use_builtin_checker
     if(checker) execSync(`cp ${tmpDir('../checkers')}/${checker} ${tmpDir('/work/chk')}`)
@@ -91,8 +100,10 @@ async function prepareForFile(submission: any) {
     }
     fs.writeFileSync(tmpDir("/work/submission.conf"), submitConf)
 
+    try {
     execSync(`mv ${tmpDir(`data/${id}`)}/std ${tmpDir('/work/std')}`)
     execSync(`mv ${tmpDir(`data/${id}`)}/val ${tmpDir('/work/val')}`)
+    } catch(e: any) {}
 
     if(submission['is_hack'] != undefined) {
         await uoj.download(submission['hack']['input'], tmpDir('/work/hack.input'));
@@ -113,6 +124,7 @@ async function checkForNewSubmission() {
         axios.default.post(uoj.url("/judge/submit"), auth, { headers: auth.getHeaders() })
         .then((res: any) => {
             let submission = res.data;
+            console.log(submission);
             if(submission != "Nothing to judge") {
                 submissionBuffer.push(submission);
             }
@@ -133,4 +145,5 @@ async function judgeLoop() {
         sleep(1);
     }
 }
+
 judgeLoop()

@@ -63,14 +63,14 @@ export async function value(inputFile: string) {
                 let output = readFileSync(tmpDir("/work/value.result")).toString();
                 resolve(output)
             });
-        } catch (ex) {
+        } catch (ex: any) {
             console.log("Whooops! " + ex.toString());
             reject(ex);
         }
     })
 }
 
-export async function check(inputFile: string, ansFile: string) {
+export async function check(inputFile: string, ansFile: string, dataFile: string = 'answer.result') {
     console.log("sandbox check:")
     return new Promise((resolve: any, reject: any)=>{
         try {
@@ -96,7 +96,7 @@ export async function check(inputFile: string, ansFile: string) {
                     }
                 ],
                 executable: "./chk",
-                parameters: ['./chk', workDir('../input/') + inputFile , 'answer.result' , workDir('../output/') + ansFile],
+                parameters: ['./chk', workDir('../input/') + inputFile , dataFile , workDir('../output/') + ansFile],
                 environments: ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"],
                 stdin: "/dev/stdin",
                 stdout: tmpDir("/work/checker.result"),
@@ -123,7 +123,7 @@ export async function check(inputFile: string, ansFile: string) {
                 console.log("Your sandbox finished!" + JSON.stringify(result));
                 resolve(readFileSync(tmpDir('/work/checker.result')).toString())
             });
-        } catch (ex) {
+        } catch (ex: any) {
             console.log("Whooops! " + ex.toString());
             reject(ex);
         }
@@ -182,7 +182,7 @@ export async function judge(inputfile: string, timeLimit: number, memLimit: numb
                 console.log("Your sandbox finished!" + JSON.stringify(result));
                 resolve(result)
             });
-        } catch (ex) {
+        } catch (ex: any) {
             console.log("Whooops! " + ex.toString());
         }
     })
@@ -241,7 +241,7 @@ export async function std(timeLimit: number, memLimit: number) {
                 console.log("Your sandbox finished!" + JSON.stringify(result));
                 resolve(result)
             });
-        } catch (ex) {
+        } catch (ex: any) {
             console.log("Whooops! " + ex.toString());
         }
     })
@@ -249,7 +249,7 @@ export async function std(timeLimit: number, memLimit: number) {
 
 
 
-export async function compile() {
+export async function compile(withImplementer = false) {
     console.log("sandbox compile:")
     return new Promise((resolve: any, reject: any)=>{
         try {
@@ -269,7 +269,7 @@ export async function compile() {
                         limit: 0
                     }],
                 executable: "/bin/python3",
-                parameters: ['/bin/python3', '/sandbox/scripts/build_in_sandbox.py', '>', 'answer.compile'],
+                parameters: ['/bin/python3', '/sandbox/scripts/build_in_sandbox.py', withImplementer ? "withImplementer" : "", '>', 'answer.compile'],
                 environments: ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"],
                 stdin: "/dev/stdin",
                 stdout: "/dev/stdout",
@@ -297,7 +297,7 @@ export async function compile() {
                 resolve(result)
             });
             
-        } catch (ex) {
+        } catch (ex: any) {
             console.log("Whooops! " + ex.toString());
         }
     })

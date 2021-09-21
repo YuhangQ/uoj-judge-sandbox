@@ -4,7 +4,9 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "test": "node ./app/main.js"
+    "test": "node ./build/main.js",
+    "dev": "supervisor -w build ./build/main.js",
+    "build": "tsc"
   },
   "author": "",
   "license": "ISC",
@@ -16,6 +18,7 @@
     "unzip": "^0.1.11"
   },
   "devDependencies": {
+    "@types/node": "^16.7.10",
     "@types/sleep": "0.0.8",
     "@types/unzip": "^0.1.1"
   }
