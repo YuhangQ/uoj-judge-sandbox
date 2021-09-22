@@ -19,7 +19,6 @@ import { logger } from "./utils/logger";
 let submissionBuffer: any = []
 
 async function onSubmission(submission: any) {
-
     console.log(JSON.stringify(submission))
     let problemConf = await prepareForFile(submission);
     let submissionConf = readSubmissionConf(tmpDir('/work/submission.conf'));
