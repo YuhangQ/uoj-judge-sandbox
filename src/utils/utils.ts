@@ -2,7 +2,7 @@ import * as fs from "fs"
 import * as path from "path"
 
 export function tmpDir(uri: string = "") {
-    return path.join(__dirname, "../tmp", uri)
+    return path.join(__dirname, "../../tmp", uri)
 }
 
 export function cmp(file1: string, file2: string) {

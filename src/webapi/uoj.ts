@@ -1,10 +1,11 @@
 import * as fs from "fs";
 import * as axios from "axios";
 import * as FormData from "form-data";
-import * as utils from "../utils/utils";
+import * as logger from "../utils/logger";
 import * as util from "util";
 import * as stream from "stream";
 import { conf } from "../config/config";
+import { json } from "stream/consumers";
 
 
 export function url(uri: string) {
@@ -51,7 +52,7 @@ export function sendAndFetch(submission: any, score: number, time: number, memor
             submitData.id = submission['hack']['id'];
         }
 
-        console.log(submitData)
+        logger.info("评测完毕，提交给UOJ: " + JSON.stringify(submitData))
 
         iteract(submitData).then((data: any)=>{
             try {

@@ -1,7 +1,8 @@
 import * as ssb from "/opt/sandbox-test/simple-sandbox/lib/index";
 import * as path from "path";
 import { readFileSync } from "fs";
-import { tmpDir } from "../utils";
+import { tmpDir } from "../utils/utils";
+import * as logger from "../utils/logger"
 
 const terminationHandler = () => {
     //process.exit(1);
@@ -15,7 +16,7 @@ export function workDir(uri: string = "") {
 }
 
 export async function value(inputFile: string) {
-    console.log("sandbox value:")
+    logger.info("正在运行 value 测评")
     return new Promise((resolve: any, reject: any)=>{
         try {
             const rootfs = "/opt/sandbox-test/rootfs"
@@ -59,19 +60,19 @@ export async function value(inputFile: string) {
             // });
     
             sandboxedProcess.waitForStop().then(result => {
-                console.log("Your sandbox finished!" + JSON.stringify(result));
+                logger.important("Your sandbox finished!" + JSON.stringify(result));
                 let output = readFileSync(tmpDir("/work/value.result")).toString();
                 resolve(output)
             });
         } catch (ex: any) {
-            console.log("Whooops! " + ex.toString());
+            logger.error("Whooops! " + ex.toString());
             reject(ex);
         }
     })
 }
 
 export async function check(inputFile: string, ansFile: string, dataFile: string = 'answer.result') {
-    console.log("sandbox check:")
+    logger.info("正在运行 check 测评")
     return new Promise((resolve: any, reject: any)=>{
         try {
             const rootfs = "/opt/sandbox-test/rootfs"
@@ -120,18 +121,18 @@ export async function check(inputFile: string, ansFile: string, dataFile: string
             // });
     
             sandboxedProcess.waitForStop().then(result => {
-                console.log("Your sandbox finished!" + JSON.stringify(result));
+                logger.important("Your sandbox finished!" + JSON.stringify(result));
                 resolve(readFileSync(tmpDir('/work/checker.result')).toString())
             });
         } catch (ex: any) {
-            console.log("Whooops! " + ex.toString());
+            logger.error("Whooops! " + ex.toString());
             reject(ex);
         }
     })
 }
 
 export async function judge(inputfile: string, timeLimit: number, memLimit: number) {
-    console.log("sandbox judge:")
+    logger.info("正在运行 judge 测评")
     return new Promise((resolve: any, reject: any)=>{
         try {
             const rootfs = "/opt/sandbox-test/rootfs"
@@ -179,18 +180,18 @@ export async function judge(inputfile: string, timeLimit: number, memLimit: numb
             // });
     
             sandboxedProcess.waitForStop().then(result => {
-                console.log("Your sandbox finished!" + JSON.stringify(result));
+                logger.important("Your sandbox finished!" + JSON.stringify(result));
                 resolve(result)
             });
         } catch (ex: any) {
-            console.log("Whooops! " + ex.toString());
+            logger.error("Whooops! " + ex.toString());
         }
     })
 };
 
 
 export async function std(timeLimit: number, memLimit: number) {
-    console.log("sandbox std:")
+    logger.info("正在运行 std 测评")
     return new Promise((resolve: any, reject: any)=>{
         try {
             const rootfs = "/opt/sandbox-test/rootfs"
@@ -238,11 +239,11 @@ export async function std(timeLimit: number, memLimit: number) {
             // });
     
             sandboxedProcess.waitForStop().then(result => {
-                console.log("Your sandbox finished!" + JSON.stringify(result));
+                logger.important("Your sandbox finished!" + JSON.stringify(result));
                 resolve(result)
             });
         } catch (ex: any) {
-            console.log("Whooops! " + ex.toString());
+            logger.error("Whooops! " + ex.toString());
         }
     })
 };
@@ -250,7 +251,7 @@ export async function std(timeLimit: number, memLimit: number) {
 
 
 export async function compile(withImplementer = false) {
-    console.log("sandbox compile:")
+    logger.info("正在运行 compile 编译")
     return new Promise((resolve: any, reject: any)=>{
         try {
             const rootfs = "/opt/sandbox-test/rootfs"
@@ -293,12 +294,12 @@ export async function compile(withImplementer = false) {
             // });
             
             sandboxedProcess.waitForStop().then(result => {
-                console.log("Your sandbox finished!" + JSON.stringify(result));
+                logger.important("Your sandbox finished!" + JSON.stringify(result));
                 resolve(result)
             });
             
         } catch (ex: any) {
-            console.log("Whooops! " + ex.toString());
+            logger.error("Whooops! " + ex.toString());
         }
     })
 };

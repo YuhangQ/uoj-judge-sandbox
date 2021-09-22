@@ -14,12 +14,15 @@ import { tmpDir, readProblemConf, readSubmissionConf } from "./utils/utils";
 import * as normalJudger from "./judger/normal";
 import * as customJudger from "./judger/custom"
 import * as answerJudger from "./judger/answer"
-import { logger } from "./utils/logger";
+import * as logger from "./utils/logger";
 
 let submissionBuffer: any = []
 
 async function onSubmission(submission: any) {
-    console.log(JSON.stringify(submission))
+
+    logger.info("开始执行该评测: " + JSON.stringify(submission))
+
+
     let problemConf = await prepareForFile(submission);
     let submissionConf = readSubmissionConf(tmpDir('/work/submission.conf'));
 
@@ -60,6 +63,9 @@ async function onSubmission(submission: any) {
 }
 
 async function prepareForFile(submission: any) {
+
+    logger.info("开始准备文件")
+
     let id: number = submission['problem_id'];
     // get new data save to /tmp/data
     execSync(`rm -rf ${tmpDir('data/*')}`)
@@ -85,11 +91,11 @@ async function prepareForFile(submission: any) {
         execSync(`mv ${tmpDir(`data/${id}/require/*`)} ${tmpDir('/work')}`)
     } catch(e: any) {}
 
+    try {
     let checker = problemConf.use_builtin_checker
     if(checker) execSync(`cp ${tmpDir('../checkers')}/${checker} ${tmpDir('/work/chk')}`)
     else execSync(`mv ${tmpDir(`data/${id}`)}/chk ${tmpDir('/work/chk')}`)
-
-    
+    } catch(e: any) {}
 
     await uoj.download(submission['content']['file_name'] , tmpDir("/work/all.zip"))
     execSync(`cd ${tmpDir('work')} && unzip -o all.zip && rm -rf ./all.zip`)
@@ -111,6 +117,8 @@ async function prepareForFile(submission: any) {
         fs.writeFileSync(tmpDir('/work/hack.input'), hack)
     }
 
+    logger.info("文件准备结束")
+
     return problemConf;
 }
 
@@ -124,8 +132,8 @@ async function checkForNewSubmission() {
         axios.default.post(uoj.url("/judge/submit"), auth, { headers: auth.getHeaders() })
         .then((res: any) => {
             let submission = res.data;
-            console.log(submission);
             if(submission != "Nothing to judge") {
+                logger.info("收到新评测信息: " + JSON.stringify(submission))
                 submissionBuffer.push(submission);
             }
             resolve();
