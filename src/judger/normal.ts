@@ -1,4 +1,4 @@
-import { tmpDir, readProblemConf, outputTooMuch, readSubmissionConf } from "../utils";
+import { tmpDir, readProblemConf, outputTooMuch, readSubmissionConf } from "../utils/utils";
 import * as ssb from "../sandbox/sandbox";
 import * as uoj from "../webapi/uoj";
 import * as fs from "fs";

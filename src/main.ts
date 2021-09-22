@@ -2,18 +2,19 @@ import * as axios from "axios";
 import * as FormData from "form-data";
 import * as uoj from "./webapi/uoj";
 import { execSync } from "child_process";
-import { conf } from "./config";
+import { conf } from "./config/config";
 import * as fs from "fs";
 import * as ssb from "./sandbox/sandbox";;
 import * as sampleJudger from "./judger/sample";
 import * as hackJudger from "./judger/hack";
 import { sleep } from "sleep";
-import { tmpDir, readProblemConf, readSubmissionConf } from "./utils";
+import { tmpDir, readProblemConf, readSubmissionConf } from "./utils/utils";
 
 // import judgers
 import * as normalJudger from "./judger/normal";
 import * as customJudger from "./judger/custom"
 import * as answerJudger from "./judger/answer"
+import { logger } from "./utils/logger";
 
 let submissionBuffer: any = []
 
@@ -129,13 +130,25 @@ async function checkForNewSubmission() {
                 submissionBuffer.push(submission);
             }
             resolve();
-        })
+        }).catch(reject)
     })
 }
 
+logger.info('正在准备启动')
+
+process.on('SIGINT', ()=>{
+    process.exit();
+})
+
+
+
 async function judgeLoop() {
     while(true) {
-        await checkForNewSubmission();
+        try {
+            await checkForNewSubmission();
+        } catch(e) {
+            logger.error("UOJ远程服务器无法连接，请检查网络或配置文件")
+        }
         while(submissionBuffer.length != 0) {
             let submission = submissionBuffer.shift();
             await onSubmission(submission)
@@ -146,4 +159,10 @@ async function judgeLoop() {
     }
 }
 
-judgeLoop()
+
+
+(async ()=> {
+logger.info('正在向远程服务器请求评测信息')
+await judgeLoop()
+})()
+

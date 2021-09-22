@@ -6,12 +6,13 @@
   "scripts": {
     "test": "node ./build/main.js",
     "dev": "supervisor -w build ./build/main.js",
-    "build": "tsc"
+    "build": "tsc -w"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.1",
+    "colors": "^1.4.0",
     "form-data": "^4.0.0",
     "js-file-download": "^0.4.12",
     "sleep": "^6.3.0",

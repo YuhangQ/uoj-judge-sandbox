@@ -1,8 +1,8 @@
-import * as utils from "../utils";
+import * as utils from "../utils/utils";
 import * as ssb from "../sandbox/sandbox";
 import * as uoj from "../webapi/uoj";
 import * as fs from "fs";
-import { tmpDir } from "../utils";
+import { tmpDir } from "../utils/utils";
 import { execSync } from "child_process";
 
 export async function judge(submission: any, problemConf: any) {

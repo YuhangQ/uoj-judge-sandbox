@@ -1,10 +1,10 @@
 import * as fs from "fs";
 import * as axios from "axios";
 import * as FormData from "form-data";
-import * as utils from "../utils";
+import * as utils from "../utils/utils";
 import * as util from "util";
 import * as stream from "stream";
-import { conf } from "../config";
+import { conf } from "../config/config";
 
 
 export function url(uri: string) {
