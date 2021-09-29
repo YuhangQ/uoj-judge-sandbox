@@ -5,6 +5,7 @@ WORKDIR /opt/sandbox-test
 
 RUN wget https://github.com.cnpmjs.org/YuhangQ/uoj-judge-sandbox/releases/download/%E7%8E%AF%E5%A2%83/rootfs.tar.gz
 RUN tar zxvf rootfs.tar.gz
+RUN rm -rf ./rootfs.tar.gz
 
 
 RUN apt update
