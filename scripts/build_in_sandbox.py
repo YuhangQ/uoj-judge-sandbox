@@ -21,6 +21,11 @@ if lang == 'C++':
         res = os.system('g++ 2>compile.result -x c++ answer.code implementer.cpp -o answer')
     else:
         res = os.system('g++ 2>compile.result -x c++ answer.code -o answer')
+if lang == 'C++11':
+    if('withImplementer' in sys.argv):
+        res = os.system('g++ 2>compile.result -x c++ -std=c++11 answer.code implementer.cpp -o answer')
+    else:
+        res = os.system('g++ 2>compile.result -x c++ -std=c++11 answer.code -o answer')
 if lang == 'C':
     if('withImplementer' in sys.argv):
         res = os.system('gcc 2>compile.result -x c answer.code implementer.c -o answer')
