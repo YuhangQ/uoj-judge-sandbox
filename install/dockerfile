@@ -31,7 +31,7 @@ RUN yarn run build
 WORKDIR /opt/uoj/judger
 RUN rm -rf ./*
 
-
+RUN ls
 RUN git clone https://github.com/YuhangQ/uoj-judge-sandbox
 WORKDIR /opt/uoj/judger/uoj-judge-sandbox
 RUN yarn
@@ -40,3 +40,16 @@ RUN mkdir tmp
 RUN mkdir ./tmp/work
 RUN mkdir ./tmp/data
 
+RUN echo "\
+#!/bin/sh\n\
+chown -R mysql:mysql /var/lib/mysql /var/run/mysqld\n\
+if [ ! -f \"/var/uoj_data/.UOJSetupDone\" ]; then\n\
+  cd /opt/uoj/install/bundle && sh install.sh -i\n\
+fi\n\
+service ntp start\n\
+service mysql start\n\
+service apache2 start\n\
+node /opt/uoj/judger/uoj-judge-sandbox/build/main.js > /opt/uoj/judger/judger.log \n\
+exec bash\n" >/opt/up && chmod +x /opt/up
+
+EXPOSE 80
