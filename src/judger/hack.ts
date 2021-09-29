@@ -14,6 +14,12 @@ export async function judge(submission: any, problemConf: any) {
     uoj.updateStatus(submission['id'], `Judging With Your Input`);
 
 
+    // fix end line
+    let hack_input =  fs.readFileSync(tmpDir(`/work/hack.input`)).toString();
+    if(!hack_input.endsWith('\n')) hack_input += '\n';
+    fs.writeFileSync(tmpDir(`/work/hack.input`), hack_input)
+
+
     let resValue = await ssb.value('../../work/hack.input') as string;
     let invalid = resValue.startsWith('FAIL');
 
@@ -23,6 +29,7 @@ export async function judge(submission: any, problemConf: any) {
 
 
     if(invalid) {
+        score = 0;
         details = `<test num="-1" score="0" time="0" memory="0" info="Invalid Input">
         <in>${fs.readFileSync(tmpDir(`/work/hack.input`)).toString().substr(0, 100)}</in>
         <out></out>
@@ -57,7 +64,7 @@ export async function judge(submission: any, problemConf: any) {
 
         if (chkResult.startsWith("ok")) {
             status = 'Accepted';
-            score = 100;
+            score = 0;
         }
 
         details = `<tests><test num="-1" score="${score}" info="${status}" time="${Math.floor(res['time']/1000000)}" memory="${res['memory']/1024}">

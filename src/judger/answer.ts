@@ -11,8 +11,6 @@ export async function judge(submission: any, problemConf: any) {
     let n_tests = problemConf.n_tests;
     let score = 0;
 
-    let testInfo: any = [{}];
-
     for (let i = 1; i <= n_tests; i++) {
 
         uoj.updateStatus(submission['id'], `Judging Test #${i}`);
@@ -44,7 +42,7 @@ export async function judge(submission: any, problemConf: any) {
         score += tscore;
         tscore = Math.round(tscore)
 
-        details += `<test num="${i}" score="${tscore}" info="${status}" time="-1" memory="-1">
+        details += `<test num="${i}" score="${tscore}" info="${status}" time="0" memory="0">
                 <in>${fs.readFileSync(tmpDir(`/work/${problemConf.output_pre}${i}.${problemConf.output_suf}`)).toString().substr(0, 100)}</in>
                 <out>${fs.readFileSync(tmpDir(`/work/${problemConf.output_pre}${i}.${problemConf.output_suf}`)).toString().substr(0, 100)}</out>
                 <res>${chkResult}</res>
@@ -56,8 +54,8 @@ export async function judge(submission: any, problemConf: any) {
 
     return {
         score: Math.round(score),
-        time: -1,
-        memory: -1,
+        time: 0,
+        memory: 0,
         details: details
     }
 }

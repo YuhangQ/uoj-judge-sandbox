@@ -34,7 +34,6 @@ git clone https://github.com/YuhangQ/uoj-judge-sandbox
 这一步最好处于国际网络环境，否则可能会遇到网络问题。
 
 ```bash
-cd /uoj-judge-sandbox/install/
 docker build -t uoj-with-sandbox .
 ```
 
