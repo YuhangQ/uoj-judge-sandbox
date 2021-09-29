@@ -39,6 +39,8 @@ RUN tsc
 RUN mkdir tmp
 RUN mkdir ./tmp/work
 RUN mkdir ./tmp/data
+WORKDIR /opt/uoj/judger/uoj-judge-sandbox/checkers
+RUN make
 
 RUN echo "\
 #!/bin/sh\n\
